@@ -455,9 +455,7 @@
         '<p class="ck-step'+(i===s ? ' big' : '')+'">'+esc(txt)+'</p>';
       var cands = stepCands(txt);
       if(!secs && !t && !cands.length){
-        h += '<details class="ck-man2"><summary>⏲ 시간이 안 적힌 단계예요 · 타이머가 필요하면 직접 맞추기</summary>'+
-          '<div class="ck-t ck-man"><input type="number" inputmode="numeric" min="1" max="600" id="tm'+i+'" value="" aria-label="분"><span>분</span> '+
-          '<button type="button" class="btn" data-act="tmanual" data-uid="'+esc(r.uid)+'" data-i="'+i+'">⏲ 시작</button></div></details>';
+        /* 시간이 안 적힌 단계는 타이머를 넣지 않아요 */
       } else if(!secs && !t){
         h += '<div class="ck-t">'+cands.map(function(c){
           return '<button type="button" class="btn" data-act="tmanual" data-uid="'+esc(r.uid)+'" data-i="'+i+'" data-secs="'+c+'">⏲ '+fmt(c)+' 타이머 시작</button>';
