@@ -119,6 +119,8 @@
   .ck-card.past{opacity:.55}
   .ck-card .ck-t{padding:10px 12px}
   .ck-card:not(.now) .ck-t .big{font-size:26px}
+  .ck-man2{border:0!important;background:none!important;padding:0!important;font-size:13px!important;color:var(--muted)}
+  .ck-man2 summary{font-weight:600;cursor:pointer}
   .ck-man{gap:8px}
   .ck-man input{width:84px;font:inherit;font-size:18px;font-weight:700;border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-align:center}
   .ck-t button.btn{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -320,7 +322,7 @@
   }
   function splitSteps(r){
     var steps = [], tips = [];
-    (r.steps||[]).forEach(function(t){ if(isTip(t)) tips.push(t.replace(/^팁\s*[:：]\s*/,'')); else steps.push(t); });
+    (r.steps||[]).forEach(function(t){ if(isTip(t)) tips.push(t.replace(/^팁\s*[:：]\s*/,'')); else steps.push(String(t).replace(/^\s*\d+\s*[.)]\s*/,'')); });
     return {steps:steps, tips:tips};
   }
 
@@ -453,9 +455,9 @@
         '<p class="ck-step'+(i===s ? ' big' : '')+'">'+esc(txt)+'</p>';
       var cands = stepCands(txt);
       if(!secs && !t && !cands.length){
-        h += '<div class="ck-t ck-man"><span class="hint">타이머 직접 맞추기</span>'+
-          '<input type="number" inputmode="numeric" min="1" max="600" id="tm'+i+'" value="" placeholder="분"> 분 '+
-          '<button type="button" class="btn" data-act="tmanual" data-uid="'+esc(r.uid)+'" data-i="'+i+'">⏲ 시작</button></div>';
+        h += '<details class="ck-man2"><summary>⏲ 시간이 안 적힌 단계예요 · 타이머가 필요하면 직접 맞추기</summary>'+
+          '<div class="ck-t ck-man"><input type="number" inputmode="numeric" min="1" max="600" id="tm'+i+'" value="" aria-label="분"><span>분</span> '+
+          '<button type="button" class="btn" data-act="tmanual" data-uid="'+esc(r.uid)+'" data-i="'+i+'">⏲ 시작</button></div></details>';
       } else if(!secs && !t){
         h += '<div class="ck-t">'+cands.map(function(c){
           return '<button type="button" class="btn" data-act="tmanual" data-uid="'+esc(r.uid)+'" data-i="'+i+'" data-secs="'+c+'">⏲ '+fmt(c)+' 타이머 시작</button>';
