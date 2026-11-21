@@ -119,6 +119,8 @@
   .ck-card.past{opacity:.55}
   .ck-card .ck-t{padding:10px 12px}
   .ck-card:not(.now) .ck-t .big{font-size:26px}
+  .ck-man{gap:8px}
+  .ck-man input{width:84px;font:inherit;font-size:18px;font-weight:700;border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-align:center}
   .ck-t button.btn{background:var(--accent);color:#fff;border-color:var(--accent)}
   .cook details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:15px}
   .cook summary{cursor:pointer;font-weight:700}
@@ -298,6 +300,11 @@
     var d = durations(text);
     return d.length===1 ? d[0] : 0;
   }
+  function suggestMin(text){
+    if(isTip(text)) return '';
+    var d = durations(text), m = 0; d.forEach(function(x){ if(x>m) m = x; });
+    return m ? String(Math.max(1, Math.round(m/60))) : '';
+  }
   function fmt(sec){
     sec = Math.max(0, sec);
     var h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60;
@@ -437,7 +444,11 @@
       h += '<div class="'+cls+'" data-i="'+i+'" id="ckstep'+i+'">'+
         '<div class="ck-no">'+(i<s ? '✓ ' : '')+(i+1)+'단계</div>'+
         '<p class="ck-step'+(i===s ? ' big' : '')+'">'+esc(txt)+'</p>';
-      if(secs){
+      if(!secs && !t){
+        h += '<div class="ck-t ck-man"><span class="hint">타이머 직접 맞추기</span>'+
+          '<input type="number" inputmode="numeric" min="1" max="600" id="tm'+i+'" value="'+suggestMin(txt)+'" placeholder="분"> 분 '+
+          '<button type="button" class="btn" data-act="tmanual" data-uid="'+esc(r.uid)+'" data-i="'+i+'">⏲ 시작</button></div>';
+      } else if(secs || t){
         if(!t) h += '<div class="ck-t"><button type="button" class="btn" data-act="tstart" data-uid="'+esc(r.uid)+'" data-i="'+i+'">⏲ '+fmt(secs)+' 타이머 시작</button></div>';
         else h += '<div class="ck-t"><span class="big" data-tt="'+t.id+'">'+(t.done?'끝!':fmt(t.left))+'</span>'+
           (t.done ? '' : '<button type="button" data-act="tpause" data-id="'+t.id+'">'+(t.running?'일시정지':'다시 시작')+'</button>')+
@@ -647,6 +658,13 @@
       if(i==='total'){ secs = totalSecs(r.time); label = r.name+' · 전체'; i = 'total'; }
       else { i = parseInt(i,10); secs = stepSecs(sp.steps[i]||''); label = r.name+' · '+(i+1)+'단계'; }
       if(secs) startTimer(uid+':'+i, label, secs);
+    }
+    else if(a==='tmanual'){
+      var r2 = byUid(uid); if(!r2) return;
+      var i2 = parseInt(el.getAttribute('data-i'),10), inp = document.getElementById('tm'+i2);
+      var mins = inp ? parseFloat(inp.value) : 0;
+      if(mins>0) startTimer(uid+':'+i2, r2.name+' · '+(i2+1)+'단계', Math.round(mins*60));
+      else if(inp) inp.focus();
     }
     else if(a==='tpause'){ var t = findId(id); if(t) pauseToggle(t); }
     else if(a==='tclose'){
