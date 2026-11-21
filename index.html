@@ -11,7 +11,7 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{-webkit-text-size-adjust:100%}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+  body{word-break:keep-all;overflow-wrap:break-word;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
   body.hasbar .wrap{padding-bottom:40px}
   body.hasbar{padding-bottom:var(--barh,0px)}
   .wrap{max-width:960px;margin:0 auto;padding:20px 20px 56px}
@@ -66,6 +66,21 @@
   .pick-g img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#eee}
   .pick-g span{display:block;font-size:12px;padding:5px 8px;color:var(--muted)}
   .pick-g button[aria-pressed="true"] span{color:var(--accent);font-weight:700}
+  .gem{border:1px dashed #cfc6b8;border-radius:14px;padding:12px 14px;background:#fff}
+  .gem-t{font-weight:800;font-size:15px;margin-bottom:6px}
+  .gem-t .hint{margin-left:6px}
+  .gem-s{padding-left:20px;display:grid;gap:10px;font-size:14px;color:var(--ink)}
+  .gem details{margin-top:8px;font-size:13px}
+  .gem summary{cursor:pointer;color:var(--accent);font-weight:700}
+  .gem pre{white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:10px;margin-top:6px;font:inherit;font-size:12px;color:var(--muted)}
+  .pv{border:1px solid var(--line);border-radius:14px;background:#fff;padding:12px 14px;display:grid;gap:6px;font-size:14px}
+  .pv[hidden]{display:none}
+  .pv-t{font-size:12px;font-weight:700;color:var(--accent)}
+  .pv-n{font-size:18px;font-weight:800;letter-spacing:-.02em}
+  .pv ol{padding-left:20px}
+  .pv .tip{margin-top:2px}
+  .manual summary{cursor:pointer;font-weight:700;font-size:14px;color:var(--muted)}
+  .manual summary .hint{margin-left:6px}
   .err{color:#b3261e;font-size:13px;min-height:1em}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .editing{font-size:13px;color:var(--accent);font-weight:700}
@@ -142,27 +157,54 @@
       </div>
       <div class="err full" id="err"></div>
 
-      <label>요리 이름 <input id="name" type="text" placeholder="직접 입력"></label>
-      <label>조리 시간 <input id="time" type="text" placeholder="예: 20분, 1시간 30분"></label>
-      <label class="full">재료 (쉼표로 구분)
-        <textarea id="ings" placeholder="직접 입력"></textarea>
-      </label>
-      <label class="full">만드는 법 (한 줄에 한 단계)
-        <textarea id="steps" style="min-height:130px" placeholder="직접 입력&#10;예) 고기를 한입 크기로 썬다&#10;예) 뚜껑을 덮고 중불에서 50분간 졸인다&#10;팁: 영상 팁은 '팁:'으로 시작하는 줄에 적어요"></textarea>
-        <span class="hint">단계에 "50분간"처럼 시간이 적혀 있으면 그 단계에 타이머가 붙어요. 시간이 두 개 이상이거나 "30~40분"처럼 범위면 붙지 않아요.</span>
-      </label>
+      <div class="gem full">
+        <div class="gem-t">Gemini로 레시피 정리하기 <span class="hint">영상 내용은 크롬의 Gemini가 읽어 줘요</span></div>
+        <ol class="gem-s">
+          <li>아래 버튼을 누르면 <b>Gemini에게 물어볼 문장이 복사되고</b>, Gemini가 새 탭으로 열려요.
+            <div class="row" style="margin-top:6px">
+              <a class="btn" id="opengem" href="https://gemini.google.com/app" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Gemini 열기 + 문장 복사</a>
+              <button type="button" class="btn ghost" id="copyprompt">문장만 복사</button>
+              <span class="hint" id="copyres"></span>
+            </div>
+            <div class="hint" style="margin-top:4px">위의 유튜브 주소를 먼저 넣으면 영상 주소도 문장에 함께 들어가요.</div>
+          </li>
+          <li>Gemini 입력칸에 붙여 넣고 보내서 답을 받아요.</li>
+          <li>Gemini의 답을 복사해 아래 칸에 붙여 넣으면 <b>바로 채워져요.</b>
+            <textarea id="gemin" style="margin-top:6px;min-height:110px" placeholder="여기에 Gemini의 답을 붙여 넣어요"></textarea>
+            <div class="hint" id="gemres" style="margin-top:6px"></div>
+          </li>
+        </ol>
+        <details><summary>복사되는 문장 보기</summary><pre id="promptview"></pre></details>
+        <p class="hint" style="margin-top:6px">Gemini의 답이 틀릴 수 있어요. 채워진 내용을 확인한 뒤 저장해 주세요.</p>
+      </div>
 
+      <div class="pv full" id="pv" hidden></div>
+
+      <details class="full manual" id="manual">
+        <summary>내용 직접 고치기 <span class="hint">Gemini가 틀렸을 때만 열어요</span></summary>
+        <div class="form" style="margin-top:8px">
+          <label>요리 이름 <input id="name" type="text" placeholder="요리 이름"></label>
+          <label>조리 시간 <input id="time" type="text" placeholder="예: 20분, 1시간 30분"></label>
+          <label class="full">재료 (쉼표로 구분)
+            <textarea id="ings"></textarea>
+          </label>
+          <label class="full">만드는 법 (한 줄에 한 단계, 팁은 '팁:'으로 시작)
+            <textarea id="steps" style="min-height:130px"></textarea>
+            <span class="hint">단계에 "50분간"처럼 시간이 하나 적혀 있으면 그 단계에 타이머가 붙어요.</span>
+          </label>
+        </div>
+      </details>
+
+      <div class="err full" id="saveerr" role="alert"></div>
       <div class="row full">
         <button class="btn" type="submit" id="savebtn">레시피 저장</button>
         <button class="btn ghost" type="button" id="cancelbtn" hidden>수정 취소</button>
-        <button class="btn ghost" type="button" disabled>영상에서 자동으로 채우기</button>
-        <span class="later">나중에 연결</span>
         <span class="editing" id="editing" hidden>수정 중</span>
       </div>
     </form>
   </section>
 
-  <footer>저장한 레시피는 이 기기의 이 브라우저에만 보관돼요. 영상 내용 자동 분석은 아직 연결되지 않았어요.</footer>
+  <footer>저장한 레시피는 이 기기의 이 브라우저에만 보관돼요. 영상 내용은 크롬의 Gemini에게 물어본 답을 붙여 넣는 방식으로 정리해요.</footer>
 </div>
 
 <!-- 요리 모드 -->
@@ -422,13 +464,15 @@
     $('form').reset(); curId = ''; curImg = 'mq'; editUid = ''; drawPick();
     $('savebtn').textContent = '레시피 저장'; $('cancelbtn').hidden = true; $('editing').hidden = true;
     $('addtitle').textContent = '유튜브 주소로 레시피 추가';
+    $('gemres').textContent = ''; $('manual').open = false; renderPreview();
   }
   $('cancelbtn').addEventListener('click', function(){ resetForm(); $('err').textContent = ''; });
   $('form').addEventListener('submit', function(e){
     e.preventDefault();
-    if(!curId){ $('err').textContent = '유튜브 영상 주소를 먼저 넣어 주세요.'; return; }
+    $('saveerr').textContent = '';
+    if(!curId){ $('saveerr').textContent = '저장하지 못했어요. 맨 위 칸에 유튜브 영상 주소를 먼저 넣어 주세요.'; $('url').scrollIntoView({behavior:'smooth',block:'center'}); return; }
     var name = $('name').value.trim();
-    if(!name){ $('err').textContent = '요리 이름을 적어 주세요.'; $('name').focus(); return; }
+    if(!name){ $('saveerr').textContent = '저장하지 못했어요. 요리 이름이 비어 있어요. Gemini의 답을 붙여 넣거나, 위 "내용 직접 고치기"에서 요리 이름을 적어 주세요.'; $('manual').open = true; $('saveerr').scrollIntoView({behavior:'smooth',block:'center'}); return; }
     var rec = {
       uid: editUid || newUid(), id: curId, img: curImg, url: 'https://www.youtube.com/watch?v='+curId, name: name,
       time: $('time').value.trim(),
@@ -438,6 +482,7 @@
     if(editUid){ for(var i=0;i<store.length;i++) if(store[i].uid===editUid){ store[i] = rec; break; } }
     else store.unshift(rec);
     $('err').textContent = persist() ? '' : '이 브라우저에서는 저장이 막혀 있어요. 새로고침하면 사라져요.';
+    $('saveerr').textContent = '';
     resetForm(); renderList();
     document.querySelector('h2.sec').scrollIntoView({behavior:'smooth'});
   });
@@ -446,11 +491,121 @@
     editUid = uid; curId = r.id; curImg = r.img || 'mq';
     $('url').value = r.url; $('name').value = r.name; $('time').value = r.time||'';
     $('ings').value = r.ings.join(', '); $('steps').value = r.steps.join('\n');
-    drawPick();
+    drawPick(); $('manual').open = true; renderPreview();
     $('savebtn').textContent = '수정 저장'; $('cancelbtn').hidden = false; $('editing').hidden = false;
     $('addtitle').textContent = '레시피 수정';
     $('add').scrollIntoView({behavior:'smooth'});
   }
+
+  // ---------- Gemini 반자동 ----------
+  var GEM_FORMAT = [
+    '영상에서 확인되지 않는 내용은 지어내지 말고 "없음"이라고 적어 줘.',
+    '',
+    '요리 이름: ',
+    '조리 시간: (영상에 나온 시간. 예: 55분)',
+    '재료: 재료1 양, 재료2 양, 재료3 양 (쉼표로 구분)',
+    '만드는 법:',
+    '1. 첫 번째 단계 (시간이 나오면 "중불에서 50분간 졸인다"처럼 그 단계 안에 적고, 한 단계에 시간은 하나만 적어 줘)',
+    '2. 두 번째 단계',
+    '팁:',
+    '- 영상에서 알려 준 팁 (없으면 "없음")'
+  ].join('\n');
+  // 유튜브 주소가 입력돼 있으면 문장에 영상 주소도 함께 넣어요
+  function buildPrompt(){
+    var head = '이 유튜브 영상의 레시피를 아래 형식 그대로 정리해 줘.';
+    if(curId) head += '\n영상 주소: https://www.youtube.com/watch?v='+curId;
+    return head+'\n'+GEM_FORMAT;
+  }
+  function refreshPromptView(){ $('promptview').textContent = buildPrompt(); }
+  refreshPromptView();
+  $('url').addEventListener('input', refreshPromptView);
+  function copyPrompt(){
+    var text = buildPrompt(); refreshPromptView();
+    function done(ok){ $('copyres').textContent = ok ? '문장이 복사됐어요.' : '복사가 막혔어요. 아래 "복사되는 문장 보기"에서 직접 복사해 주세요.'; }
+    function fallback(){
+      var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch(e){}
+      document.body.removeChild(ta); done(ok);
+    }
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){ done(true); }, fallback);
+        return;
+      }
+    }catch(e){}
+    fallback();
+  }
+  $('copyprompt').addEventListener('click', copyPrompt);
+  $('opengem').addEventListener('click', copyPrompt); // 링크는 그대로 새 탭으로 열려요
+
+  var EMPTYVAL = /^(없음|해당\s*없음|-|—|n\/a|영상에\s*없음)\.?$/i;
+  function parseGemini(text){
+    var out = {name:'', time:'', ings:[], steps:[], tips:[]}, cur = '';
+    var re = /^(?:[-•·]\s*)?(요리\s*이름|조리\s*시간|재료|만드는\s*법|팁)\s*(?:[:：]\s*(.*))?$/;
+    function add(key, val){
+      val = String(val||'').replace(/^[-•·]\s+/,'').trim();
+      if(!val || EMPTYVAL.test(val)) return;
+      if(key==='name'){ if(!out.name) out.name = val; }
+      else if(key==='time'){ if(!out.time) out.time = val; }
+      else if(key==='ings'){ val.split(/[,，]/).forEach(function(x){ x = x.trim(); if(x && !EMPTYVAL.test(x)) out.ings.push(x); }); }
+      else if(key==='steps'){ val = val.replace(/^\d+\s*[.)]\s*/,'').trim(); if(val) out.steps.push(val); }
+      else if(key==='tips'){ out.tips.push(val.replace(/^팁\s*[:：]\s*/,'')); }
+    }
+    var map = {'요리이름':'name','조리시간':'time','재료':'ings','만드는법':'steps','팁':'tips'};
+    String(text||'').split(/\r?\n/).forEach(function(raw){
+      var line = raw.replace(/[*_`]/g,'').replace(/^\s*#+\s*/,'').trim();
+      if(!line) return;
+      var m = line.match(re);
+      if(m){ cur = map[m[1].replace(/\s+/g,'')]; add(cur, m[2]); }
+      else if(cur) add(cur, line);
+    });
+    return out;
+  }
+  function parseStepLines(text){
+    return String(text||'').split('\n').map(function(s){return s.trim().replace(/^\d+\s*[.)]\s*/,'')}).filter(Boolean);
+  }
+  function parseIngs(text){
+    return String(text||'').split(/[,\n]/).map(function(s){return s.trim()}).filter(Boolean);
+  }
+  // 채워진 내용을 읽기 쉽게 보여 줘요 (저장 전 확인용)
+  function renderPreview(){
+    var name = $('name').value.trim(), time = $('time').value.trim();
+    var ings = parseIngs($('ings').value), steps = parseStepLines($('steps').value);
+    var box = $('pv');
+    if(!name && !time && !ings.length && !steps.length){ box.hidden = true; box.innerHTML = ''; return; }
+    var sp = splitSteps({steps: steps});
+    var h = '<div class="pv-t">채워진 내용 확인</div><div class="pv-n">'+esc(name || '(요리 이름 없음)')+'</div>';
+    if(time) h += '<div><span class="chip">⏱ '+esc(time)+'</span></div>';
+    h += ings.length ? '<div><b>재료 '+ings.length+'개</b> · '+esc(ings.join(', '))+'</div>' : '<div class="hint">재료가 비어 있어요</div>';
+    if(sp.steps.length){
+      h += '<div><b>만드는 법 '+sp.steps.length+'단계</b></div><ol>'+sp.steps.map(function(t){
+        var s = stepSecs(t); return '<li>'+esc(t)+(s ? ' <span class="chip">⏲ '+fmt(s)+'</span>' : '')+'</li>';
+      }).join('')+'</ol>';
+    } else h += '<div class="hint">만드는 법이 비어 있어요</div>';
+    sp.tips.forEach(function(t){ h += '<div class="tip">💡 '+esc(t)+'</div>'; });
+    box.innerHTML = h; box.hidden = false;
+  }
+  ['name','time','ings','steps'].forEach(function(id){ $(id).addEventListener('input', renderPreview); });
+
+  // Gemini 답을 붙여 넣으면 바로 읽어서 채워요
+  var gemTimer = null;
+  function runGemini(){
+    var txt = $('gemin').value;
+    if(!txt.trim()){ $('gemres').textContent = ''; return; }
+    var r = parseGemini(txt);
+    if(!r.name && !r.time && !r.ings.length && !r.steps.length && !r.tips.length){
+      $('gemres').textContent = '형식을 읽지 못했어요. 복사한 문장으로 Gemini에 다시 물어봐 주세요.'; return;
+    }
+    if(r.name) $('name').value = r.name;
+    if(r.time) $('time').value = r.time;
+    if(r.ings.length) $('ings').value = r.ings.join(', ');
+    var st = r.steps.concat(r.tips.map(function(t){ return '팁: '+t; }));
+    if(st.length) $('steps').value = st.join('\n');
+    renderPreview();
+    $('gemres').textContent = '채웠어요 (재료 '+r.ings.length+'개, 단계 '+r.steps.length+'개, 팁 '+r.tips.length+'개). 아래에서 확인 후 저장해 주세요.';
+  }
+  $('gemin').addEventListener('input', function(){ clearTimeout(gemTimer); gemTimer = setTimeout(runGemini, 400); });
 
   // ---------- 클릭 처리 ----------
   $('gotoadd').addEventListener('click', function(){
