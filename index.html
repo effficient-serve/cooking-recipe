@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>내 레시피 노트</title>
@@ -110,7 +111,7 @@
   .ck-t{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px 18px}
   .ck-t .big{font-size:44px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
   .ck-t button{font:inherit;font-weight:700;border-radius:10px;padding:9px 14px;border:1px solid var(--line);background:#fff;cursor:pointer}
-  .ck-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px 14px;display:grid;gap:8px;scroll-margin-top:70px;cursor:pointer}
+  .ck-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px 14px;display:grid;gap:8px;scroll-margin-top:var(--vtop,70px);cursor:pointer}
   .ck-card .ck-step{font-size:16px;font-weight:600;padding:0;border:0;background:none;border-radius:0;line-height:1.5}
   .ck-card .ck-step.big{font-size:clamp(22px,5.5vw,30px);font-weight:700;line-height:1.45}
   .ck-card .ck-no{font-size:13px;font-weight:700;color:var(--muted)}
@@ -119,6 +120,15 @@
   .ck-card.past{opacity:.55}
   .ck-card .ck-t{padding:10px 12px}
   .ck-card:not(.now) .ck-t .big{font-size:26px}
+  .ckvid{position:sticky;top:0;z-index:6;background:#1f1b18;border-radius:14px;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+  .ckvid[hidden]{display:none}
+  .ckvid-bar{display:flex;align-items:center;gap:10px;padding:6px 10px;color:#fff;font-size:13px;font-weight:700}
+  .ckvid-bar span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ckvid-bar a{color:#ffd9c9;font-weight:600}
+  .ckvid-bar button{font:inherit;font-size:13px;font-weight:700;border:1px solid #5a514a;background:transparent;color:#fff;border-radius:8px;padding:4px 10px;cursor:pointer}
+  .ckvid-box{aspect-ratio:16/9;max-height:38vh;margin:0 auto;background:#000}
+  .ckvid-box iframe{display:block;width:100%;height:100%;border:0}
+  .ck-vbtn{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:8px 12px;cursor:pointer;justify-self:start}
   .ck-man2{border:0!important;background:none!important;padding:0!important;font-size:13px!important;color:var(--muted)}
   .ck-man2 summary{font-weight:600;cursor:pointer}
   .ck-man{gap:8px}
@@ -228,6 +238,12 @@
       <div><div id="ckname"></div><div id="ckprog"></div></div>
       <button type="button" id="ckclose">닫기</button>
     </div>
+    <div class="ckvid" id="ckvid" hidden>
+      <div class="ckvid-bar"><span id="ckvidlab"></span>
+        <a id="ckvidlink" href="#" target="_blank" rel="noopener">유튜브에서 열기</a>
+        <button type="button" id="ckvidx">닫기</button></div>
+      <div class="ckvid-box" id="ckvidbox"></div>
+    </div>
     <div id="ckbody" style="display:grid;gap:14px"></div>
   </div>
   <div class="cook-nav"><div class="in">
@@ -320,10 +336,18 @@
     var p = function(n){return (n<10?'0':'')+n};
     return (h ? h+':' : '') + p(m) + ':' + p(s);
   }
+  // 단계 맨 앞의 [1:23] 같은 영상 시간을 초로 읽어요
+  var VT_RE = /^\s*[\[(（]?\s*(?:(\d{1,2}):)?(\d{1,2}):(\d{2})\s*[\])）]?\s*[-–:]?\s*/;
+  function fmtVt(sec){ var h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60, p = function(n){return (n<10?'0':'')+n}; return h ? h+':'+p(m)+':'+p(s) : m+':'+p(s); }
   function splitSteps(r){
-    var steps = [], tips = [];
-    (r.steps||[]).forEach(function(t){ if(isTip(t)) tips.push(t.replace(/^팁\s*[:：]\s*/,'')); else steps.push(String(t).replace(/^\s*\d+\s*[.)]\s*/,'')); });
-    return {steps:steps, tips:tips};
+    var steps = [], tips = [], vt = [];
+    (r.steps||[]).forEach(function(t){
+      if(isTip(t)){ tips.push(t.replace(/^팁\s*[:：]\s*/,'')); return; }
+      var s = String(t).replace(/^\s*\d+\s*[.)]\s*/,''), sec = 0, m = s.match(VT_RE);
+      if(m){ sec = (+m[1]||0)*3600 + (+m[2])*60 + (+m[3]); s = s.slice(m[0].length); }
+      steps.push(s); vt.push(sec);
+    });
+    return {steps:steps, tips:tips, vt:vt};
   }
 
   // ---------- 타이머 (여러 개 동시에) ----------
@@ -436,7 +460,25 @@
     $('cook').hidden = false; document.body.style.overflow = 'hidden';
     renderCook();
   }
-  function closeCook(){ $('cook').hidden = true; document.body.style.overflow = ''; }
+  function stopVideo(){ $('ckvidbox').innerHTML = ''; $('ckvid').hidden = true; $('cook').style.removeProperty('--vtop'); }
+  function playVideo(r, i, sec){
+    var id = r.id, box = $('ckvidbox');
+    box.innerHTML = '';
+    var f = document.createElement('iframe');
+    var org = (location.protocol==='http:' || location.protocol==='https:') ? '&origin='+encodeURIComponent(location.origin) : '';
+    f.src = 'https://www.youtube.com/embed/'+encodeURIComponent(id)+'?start='+sec+'&autoplay=1&playsinline=1&fs=0&rel=0&modestbranding=1'+org;
+    f.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
+    f.setAttribute('allow','accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+    f.setAttribute('title','요리 영상');
+    box.appendChild(f);
+    $('ckvidlab').textContent = (i+1)+'단계 · '+fmtVt(sec)+'부터';
+    $('ckvidlink').href = 'https://www.youtube.com/watch?v='+encodeURIComponent(id)+'&t='+sec+'s';
+    $('ckvid').hidden = false;
+    $('cook').style.setProperty('--vtop', ($('ckvid').offsetHeight+12)+'px');
+    var cs = $('ckstep'+i); if(cs) cs.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  $('ckvidx').addEventListener('click', stopVideo);
+  function closeCook(){ stopVideo(); $('cook').hidden = true; document.body.style.overflow = ''; }
   function renderCook(scroll){
     var r = byUid(cook.uid); if(!r){ closeCook(); return; }
     var sp = splitSteps(r), n = sp.steps.length;
@@ -452,7 +494,8 @@
       var cls = 'ck-card'+(i===s ? ' now' : (i<s ? ' past' : ''));
       h += '<div class="'+cls+'" data-i="'+i+'" id="ckstep'+i+'">'+
         '<div class="ck-no">'+(i<s ? '✓ ' : '')+(i+1)+'단계</div>'+
-        '<p class="ck-step'+(i===s ? ' big' : '')+'">'+esc(txt)+'</p>';
+        '<p class="ck-step'+(i===s ? ' big' : '')+'">'+esc(txt)+'</p>'+
+        (sp.vt[i] ? '<button type="button" class="ck-vbtn" data-act="vplay" data-uid="'+esc(r.uid)+'" data-i="'+i+'">▶ 영상 '+fmtVt(sp.vt[i])+'부터 보기</button>' : '');
       var cands = stepCands(txt);
       if(!secs && !t && !cands.length){
         /* 시간이 안 적힌 단계는 타이머를 넣지 않아요 */
@@ -548,14 +591,15 @@
   // ---------- Gemini 반자동 ----------
   var GEM_FORMAT = [
     '영상에서 확인되지 않는 내용은 지어내지 말고 "없음"이라고 적어 줘.',
+    '만드는 법의 각 단계 맨 앞에 그 단계가 영상에서 시작되는 시간을 [분:초] 형식으로 적어 줘. 시간을 정확히 모르면 적지 마.',
     '재료는 영상 설명란, 자막, 화면에 나온 것과 영상 속 말로 직접 언급된 것만 적어 줘. 일반적인 레시피에서 흔히 쓰는 재료를 네 판단으로 보태지 말고, 영상에 없는 양은 적지 마.',
     '',
     '요리 이름: ',
     '조리 시간: (영상에 나온 시간. 예: 55분)',
     '재료: 재료1 양, 재료2 양, 재료3 양 (쉼표로 구분)',
     '만드는 법:',
-    '1. 첫 번째 단계 (시간이 나오면 "중불에서 50분간 졸인다"처럼 그 단계 안에 적고, 한 단계에 시간은 하나만 적어 줘)',
-    '2. 두 번째 단계',
+    '1. [0:45] 첫 번째 단계 (시간이 나오면 "중불에서 50분간 졸인다"처럼 그 단계 안에 적고, 한 단계에 시간은 하나만 적어 줘)',
+    '2. [2:10] 두 번째 단계',
     '팁:',
     '- 영상에서 알려 준 팁 (없으면 "없음")'
   ].join('\n');
@@ -684,6 +728,11 @@
       timers = timers.filter(function(t){return t.id!==id});
       if(!timers.length && tick){ clearInterval(tick); tick = null; }
       renderBar(); if(!$('cook').hidden) renderCook();
+    }
+    else if(a==='vplay'){
+      var r3 = byUid(uid); if(!r3) return;
+      var i3 = parseInt(el.getAttribute('data-i'),10), sec3 = splitSteps(r3).vt[i3] || 0;
+      if(sec3) playVideo(r3, i3, sec3);
     }
     else if(a==='cook') openCook(uid);
     else if(a==='edit') startEdit(uid);
