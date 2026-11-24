@@ -1,7 +1,9 @@
 // 유튜브 주소 → Gemini(무료 모델)로 레시피 정리. API 키는 서버(환경변수)에만 있어요.
 import { GoogleGenAI } from '@google/genai';
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+// 첫 모델이 붐비면(503) 다음 모델로 한 번 더 시도해요
+const MODELS = [process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite', process.env.GEMINI_FALLBACK_MODEL || 'gemini-3.6-flash'].filter((m, i, a) => m && a.indexOf(m) === i);
+const ATTEMPT_MS = 12000;         // 한 번 시도에 쓰는 최대 시간 (서버 함수 제한 안에 끝내려고)
 const LIMIT = 10;                 // IP 하나당 시간당 호출 수 (서버가 깨어 있는 동안만 세는 대략적인 제한)
 const WINDOW_MS = 60 * 60 * 1000;
 const hits = new Map();
@@ -70,22 +72,32 @@ export default async (req, context) => {
 
   const f = FORMATS[lang];
   const prompt = `${f.head}\n${lang === 'en' ? 'Video URL: ' : '영상 주소: '}https://www.youtube.com/watch?v=${id}\n${f.body}`;
-  try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    const res = await ai.models.generateContent({
-      model: MODEL,
-      contents: [{ role: 'user', parts: [{ fileData: { fileUri: `https://www.youtube.com/watch?v=${id}` } }, { text: prompt }] }],
-    });
-    const text = (res && res.text) || '';
-    if (!text.trim()) return json({ error: 'empty' }, 502);
-    return json({ text });
-  } catch (e) {
-    const msg = String((e && e.message) || e);
-    console.error('gemini error:', msg.slice(0, 300));
-    if (/429|quota|rate/i.test(msg)) return json({ error: 'quota' }, 429);
-    if (/private|unavailable|not (?:found|accessible)|permission/i.test(msg)) return json({ error: 'video' }, 422);
-    return json({ error: 'upstream' }, 502);
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const contents = [{ role: 'user', parts: [{ fileData: { fileUri: `https://www.youtube.com/watch?v=${id}` } }, { text: prompt }] }];
+  let last = 'upstream';
+  for (const model of MODELS) {
+    try {
+      let timer;
+      const res = await Promise.race([
+        ai.models.generateContent({ model, contents }),
+        new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('TIMEOUT')), ATTEMPT_MS); }),
+      ]).finally(() => clearTimeout(timer));
+      const text = (res && res.text) || '';
+      if (text.trim()) return json({ text, model });
+      last = 'empty';
+    } catch (e) {
+      const msg = String((e && e.message) || e);
+      console.error(`gemini error (${model}):`, msg.slice(0, 300));
+      if (/TIMEOUT/.test(msg)) last = 'timeout';
+      else if (/\b503\b|overload|high demand|UNAVAILABLE/i.test(msg)) last = 'busy';
+      else if (/\b429\b|quota|rate|RESOURCE_EXHAUSTED/i.test(msg)) last = 'quota';
+      else if (/\b400\b|\b403\b|private|not accessible|permission denied|INVALID_ARGUMENT|PERMISSION_DENIED/i.test(msg)) last = 'video';
+      else last = 'upstream';
+      if (last === 'video') break; // 영상 문제는 다른 모델로 해도 같아요
+    }
   }
+  const status = { busy: 503, timeout: 504, quota: 429, video: 422, empty: 502, upstream: 502 }[last] || 502;
+  return json({ error: last }, status);
 };
 
 export const config = { path: '/api/recipe' };

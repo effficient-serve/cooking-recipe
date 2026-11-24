@@ -346,6 +346,8 @@
       autoDone:'자동으로 채웠어요. 아래에서 확인 후 저장해 주세요.',
       autoRate:'요청이 너무 많아요. 잠시 뒤에 다시 시도해 주세요.', autoQuota:'오늘 쓸 수 있는 무료 한도를 다 썼어요. 아래 직접 방법을 써 주세요.',
       autoVideo:'이 영상은 분석할 수 없어요. 공개 영상인지 확인해 주세요.',
+      autoAiBusy:'AI가 지금 붐벼요. 잠시 뒤에 버튼을 다시 눌러 주세요.',
+      autoTimeout:'영상 분석이 오래 걸려서 멈췄어요. 다시 눌러 보거나, 더 짧은 영상으로 해 보세요.',
       autoFail:'자동 정리에 실패했어요. 잠시 뒤에 다시 하거나, 아래 직접 방법을 써 주세요.',
       gHead:'이 유튜브 영상의 레시피를 아래 형식 그대로 정리해 줘.', gUrl:'영상 주소: '
     },
@@ -401,6 +403,8 @@
       autoDone:'Filled in automatically. Check below, then save.',
       autoRate:'Too many requests. Please try again in a little while.', autoQuota:'The free daily quota has run out. Please use the manual method below.',
       autoVideo:'This video can\u2019t be analyzed. Please check that it is public.',
+      autoAiBusy:'The AI is busy right now. Please press the button again in a little while.',
+      autoTimeout:'The analysis took too long and stopped. Try again, or use a shorter video.',
       autoFail:'Automatic processing failed. Try again shortly, or use the manual method below.',
       gHead:'Summarize the recipe from this YouTube video in exactly the format below.', gUrl:'Video URL: '
     }
@@ -887,7 +891,7 @@
         var g = $('gemres').textContent; res.textContent = tr('autoDone'); $('gemres').textContent = g;
       } else {
         var e = (o.j && o.j.error) || '';
-        res.textContent = e==='rate' ? tr('autoRate') : e==='quota' ? tr('autoQuota') : e==='video' ? tr('autoVideo') : tr('autoFail');
+        res.textContent = e==='rate' ? tr('autoRate') : e==='quota' ? tr('autoQuota') : e==='video' ? tr('autoVideo') : e==='busy' ? tr('autoAiBusy') : e==='timeout' ? tr('autoTimeout') : tr('autoFail');
       }
     })
     .catch(function(){ res.textContent = tr('autoFail'); })
