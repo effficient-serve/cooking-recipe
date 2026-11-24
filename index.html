@@ -33,6 +33,18 @@
   .btn.ghost:disabled{color:#a79f94}
   .later{display:inline-block;font-size:11px;font-weight:700;color:var(--later);background:var(--later-bg);padding:2px 8px;border-radius:999px;vertical-align:middle}
 
+  .srch{margin:0 0 16px}
+  .srch .row{display:flex;gap:8px}
+  .srch input{flex:1;min-width:0;font:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;color:var(--ink)}
+  .srch input:focus{outline:2px solid var(--accent);border-color:transparent}
+  .srch label{display:block;font-size:14px;font-weight:600}
+  .sres{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
+  .sres button{font:inherit;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:0;overflow:hidden;cursor:pointer;color:var(--ink)}
+  .sres button:active{transform:scale(.98)}
+  .sres img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#eee}
+  .sres .st{padding:8px 10px 10px;font-size:13px;line-height:1.35}
+  .sres .st b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:700}
+  .sres .st span{display:block;margin-top:3px;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   h2.sec{font-size:20px;letter-spacing:-.02em;margin:34px 0 12px}
   .sub{font-size:14px;color:var(--muted);margin:-6px 0 14px}
 
@@ -174,6 +186,18 @@
     <h2 class="sec" id="addtitle">유튜브 주소로 레시피 추가</h2>
     <p class="sub" data-i18n="sub">영상 주소를 붙여 넣고, 요리 정보를 적어 저장해 두세요.</p>
 
+    <div class="srch">
+      <label class="full"><span data-i18n="searchLabel">요리 검색</span>
+        <div class="row" style="margin-top:6px">
+          <input id="sq" type="search" enterkeyhint="search" placeholder="예: 김치찌개" data-i18n-ph="searchPh" autocomplete="off">
+          <button type="button" class="btn" id="sbtn" data-i18n="searchBtn">검색</button>
+        </div>
+      </label>
+      <div class="hint" id="sres-msg" role="status" style="margin-top:6px"></div>
+      <div class="sres" id="sres"></div>
+      <div class="hint" style="margin-top:8px" data-i18n="searchOr">또는 아래에 유튜브 주소를 직접 붙여 넣어도 돼요.</div>
+    </div>
+
     <form class="form" id="form" novalidate>
       <label class="full"><span data-i18n="urlLabel">유튜브 주소</span>
         <input id="url" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="off">
@@ -311,6 +335,12 @@
       parseFail:'형식을 읽지 못했어요. 복사한 문장으로 Gemini에 다시 물어봐 주세요.',
       filled:'채웠어요 (재료 {0}개, 단계 {1}개, 팁 {2}개). 아래에서 확인 후 저장해 주세요.',
       tipPrefix:'팁: ',
+      searchLabel:'요리 검색', searchPh:'예: 김치찌개', searchBtn:'검색',
+      searchOr:'또는 아래에 유튜브 주소를 직접 붙여 넣어도 돼요.', searchBusy:'검색 중…', searchEmpty:'검색 결과가 없어요.',
+      searchHint:'영상을 누르면 레시피를 자동으로 만들어요.',
+      searchQuota:'오늘 검색 한도를 다 썼어요. 아래 칸에 유튜브 주소를 직접 붙여 넣어 주세요.',
+      searchRate:'검색이 너무 많아요. 잠시 뒤에 다시 시도해 주세요.',
+      searchFail:'검색에 실패했어요. 잠시 뒤에 다시 하거나 유튜브 주소를 직접 붙여 넣어 주세요.',
       autoGen:'✨ 자동으로 레시피 만들기', autoOr:'자동이 안 되면 아래 방법으로 직접 할 수 있어요.',
       autoBusy:'영상을 분석하는 중이에요… (최대 1분)', autoNoUrl:'위 칸에 유튜브 영상 주소를 먼저 넣어 주세요.',
       autoDone:'자동으로 채웠어요. 아래에서 확인 후 저장해 주세요.',
@@ -360,6 +390,12 @@
       parseFail:'Couldn\u2019t read the format. Please ask Gemini again with the copied prompt.',
       filled:'Filled in ({0} ingredients, {1} steps, {2} tip(s)). Check below, then save.',
       tipPrefix:'Tip: ',
+      searchLabel:'Search dishes', searchPh:'e.g. kimchi stew', searchBtn:'Search',
+      searchOr:'Or paste a YouTube link below.', searchBusy:'Searching\u2026', searchEmpty:'No results.',
+      searchHint:'Tap a video to create the recipe automatically.',
+      searchQuota:'Today\u2019s search quota has run out. Please paste a YouTube link below instead.',
+      searchRate:'Too many searches. Please try again in a little while.',
+      searchFail:'Search failed. Try again shortly, or paste a YouTube link below.',
       autoGen:'✨ Create the recipe automatically', autoOr:'If this doesn\u2019t work, you can do it manually below.',
       autoBusy:'Analyzing the video\u2026 (up to a minute)', autoNoUrl:'Please enter a YouTube video link in the field above first.',
       autoDone:'Filled in automatically. Check below, then save.',
@@ -797,6 +833,42 @@
     }catch(e){}
     fallback();
   }
+  // 요리 검색 → 영상 선택 → 자동 레시피
+  var sBusy = false, sTok = 0;
+  function runSearch(){
+    var q = $('sq').value.trim(), msg = $('sres-msg'), box = $('sres');
+    if(!q || sBusy) return;
+    sBusy = true; $('sbtn').disabled = true; msg.textContent = tr('searchBusy'); box.innerHTML = '';
+    var tok = ++sTok;
+    fetch('/api/search', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({q:q, lang:LANG})})
+    .then(function(r){ return r.json().catch(function(){ return {error:'upstream'}; }).then(function(j){ return {ok:r.ok, j:j}; }); })
+    .then(function(o){
+      if(tok !== sTok) return;
+      if(o.ok && o.j && o.j.items){
+        if(!o.j.items.length){ msg.textContent = tr('searchEmpty'); return; }
+        msg.textContent = tr('searchHint');
+        box.innerHTML = o.j.items.map(function(it){
+          return '<button type="button" data-vid="'+esc(it.id)+'"><img src="'+esc(it.thumb)+'" alt="" loading="lazy"><div class="st"><b>'+esc(it.title)+'</b><span>'+esc(it.channel)+'</span></div></button>';
+        }).join('');
+      } else {
+        var e = (o.j && o.j.error) || '';
+        msg.textContent = (e==='quota') ? tr('searchQuota') : (e==='rate') ? tr('searchRate') : tr('searchFail');
+      }
+    })
+    .catch(function(){ if(tok === sTok) msg.textContent = tr('searchFail'); })
+    .then(function(){ sBusy = false; $('sbtn').disabled = false; });
+  }
+  $('sbtn').addEventListener('click', runSearch);
+  $('sq').addEventListener('keydown', function(e){ if(e.key==='Enter'){ e.preventDefault(); runSearch(); } });
+  $('sres').addEventListener('click', function(e){
+    var b = e.target.closest('button[data-vid]'); if(!b) return;
+    var u = $('url'); u.value = 'https://www.youtube.com/watch?v='+b.getAttribute('data-vid');
+    u.dispatchEvent(new Event('input'));
+    $('gemin').value = ''; $('gemres').textContent = '';
+    $('autogen').scrollIntoView({behavior:'smooth', block:'center'});
+    $('autogen').click();
+  });
+
   // 서버 함수(Gemini)로 자동 정리
   var autoBusy = false;
   $('autogen').addEventListener('click', function(){
@@ -950,7 +1022,7 @@
     $('savebtn').textContent = editUid ? tr('saveEdit') : tr('save');
     $('addtitle').textContent = editUid ? tr('editTitle') : tr('addTitle');
     var v = $('url').value.trim(); $('err').textContent = (v && !ytId(v)) ? tr('badUrl') : '';
-    $('copyres').textContent = ''; $('gemres').textContent = ''; $('saveerr').textContent = ''; $('autores').textContent = '';
+    $('copyres').textContent = ''; $('gemres').textContent = ''; $('saveerr').textContent = ''; $('autores').textContent = ''; $('sres-msg').textContent = ''; $('sres').innerHTML = '';
     refreshPromptView(); renderPreview(); drawPick(); renderList(); renderBar();
     if(!$('cook').hidden){
       renderCook();
