@@ -56,6 +56,11 @@
   .srch{margin:0 0 16px}
   .srch .row{display:flex;gap:8px}
   .srch input{flex:1;min-width:0;font:inherit;font-size:16px;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;color:var(--ink)}
+  .qchips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .qchip{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:7px 14px;cursor:pointer}
+  .qchip:active{background:var(--accent-soft)}
+  details.mg{margin-top:6px}
+  details.mg>summary{cursor:pointer;font-size:14px;font-weight:700;color:var(--muted)}
   .srch input:focus{outline:2px solid var(--accent);border-color:transparent}
   .srch label{display:block;font-size:14px;font-weight:600}
   .sres{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
@@ -200,8 +205,8 @@
     <div class="cta"><button class="btn" type="button" id="gotoadd" data-i18n="gotoadd">＋ 레시피 추가하기</button></div>
   </section>
 
-  <h2 class="sec" data-i18n="myRecipes">내 레시피</h2>
-  <div class="list" id="list"></div>
+  <div id="mine"><h2 class="sec" data-i18n="myRecipes">내 레시피</h2>
+  <div class="list" id="list"></div></div>
 
   <section id="add" aria-label="레시피 추가" data-i18n-aria="addAria">
     <h2 class="sec" id="addtitle">유튜브 주소로 레시피 추가</h2>
@@ -216,7 +221,8 @@
       </label>
       <div class="hint" id="sres-msg" role="status" style="margin-top:6px"></div>
       <div class="sres" id="sres"></div>
-      <div class="hint" style="margin-top:8px" data-i18n="searchOr">또는 아래에 유튜브 주소를 직접 붙여 넣어도 돼요.</div>
+      <div class="qchips" id="qchips"></div>
+      <div class="hint" style="margin-top:12px" data-i18n="searchOr">또는 아래에 유튜브 주소를 직접 붙여 넣어도 돼요.</div>
     </div>
 
     <form class="form" id="form" novalidate>
@@ -235,8 +241,8 @@
           <button type="button" class="btn" id="autogen" data-i18n="autoGen">✨ 자동으로 레시피 만들기</button>
           <span class="hint" id="autores" role="status"></span>
         </div>
-        <div class="hint" style="margin-bottom:8px" data-i18n="autoOr">자동이 안 되면 아래 방법으로 직접 할 수 있어요.</div>
-        <ol class="gem-s">
+        <details class="mg" id="gemdetails"><summary><span data-i18n="autoOr">자동이 안 되면 직접 하는 방법</span></summary>
+        <ol class="gem-s" style="margin-top:10px">
           <li><span data-i18n-html="gemS1">아래 버튼을 누르면 <b>Gemini에게 물어볼 문장이 복사되고</b>, Gemini가 새 탭으로 열려요.</span>
             <div class="row" style="margin-top:6px">
               <a class="btn" id="opengem" href="https://gemini.google.com/app" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block" data-i18n="openGem">Gemini 열기 + 문장 복사</a>
@@ -252,6 +258,7 @@
           </li>
         </ol>
         <details><summary data-i18n="viewPrompt">복사되는 문장 보기</summary><pre id="promptview"></pre></details>
+        </details>
         <p class="hint" style="margin-top:6px" data-i18n="gemWarn">Gemini의 답이 틀릴 수 있어요. 채워진 내용을 확인한 뒤 저장해 주세요.</p>
       </div>
 
@@ -319,13 +326,13 @@
       title:'내 레시피 노트',
       logo:'내 <span>레시피</span> 노트',
       h1:'자주 해먹는 요리,<br>이제 <em>한 번의 클릭</em>으로.',
-      lead:'요리별로 시간과 재료, 만드는 법을 기록해 두고 필요할 때 바로 꺼내 보세요.',
+      lead:'요리를 검색하면 AI가 영상에서 레시피를 정리해 주고, 단계별 타이머로 따라 만들 수 있어요.',
       gotoadd:'＋ 레시피 추가하기', myRecipes:'내 레시피', addAria:'레시피 추가',
-      addTitle:'유튜브 주소로 레시피 추가', editTitle:'레시피 수정',
-      sub:'영상 주소를 붙여 넣고, 요리 정보를 적어 저장해 두세요.',
+      addTitle:'요리 검색해서 레시피 추가', editTitle:'레시피 수정',
+      sub:'요리 이름을 검색해 영상을 누르면 레시피가 자동으로 만들어져요.',
       urlLabel:'유튜브 주소', pickTitle:'대표 이미지 고르기', pickSub:'완성된 요리가 나오는 장면을 눌러 보세요',
       pickMq:'영상 대표 썸네일', pick1:'앞부분 장면', pick2:'중간 장면', pick3:'뒷부분 장면',
-      gemTitle:'Gemini로 레시피 정리하기', gemHint:'영상 내용은 크롬의 Gemini가 읽어 줘요',
+      gemTitle:'Gemini로 레시피 정리하기', gemHint:'AI가 영상을 읽어 줘요',
       gemS1:'아래 버튼을 누르면 <b>Gemini에게 물어볼 문장이 복사되고</b>, Gemini가 새 탭으로 열려요.',
       openGem:'Gemini 열기 + 문장 복사', copyOnly:'문장만 복사',
       gemS1h:'위의 유튜브 주소를 먼저 넣으면 영상 주소도 문장에 함께 들어가요.',
@@ -338,10 +345,10 @@
       ingsLabel:'재료 (쉼표로 구분)', stepsLabel:"만드는 법 (한 줄에 한 단계, 팁은 '팁:'으로 시작)",
       stepsHint:'단계에 "50분간"처럼 시간이 하나 적혀 있으면 그 단계에 타이머가 붙어요.',
       save:'레시피 저장', saveEdit:'수정 저장', cancelEdit:'수정 취소', editing:'수정 중',
-      footer:'저장한 레시피는 이 기기의 이 브라우저에만 보관돼요. 영상 내용은 크롬의 Gemini에게 물어본 답을 붙여 넣는 방식으로 정리해요.',
+      footer:'저장한 레시피는 이 브라우저에 보관되고, 상단의 "드라이브 연결"을 켜면 내 구글 드라이브로 모든 기기에서 볼 수 있어요. 레시피는 AI(Gemini)가 정리하니 저장 전에 확인해 주세요.',
       cookAria:'요리 모드', close:'닫기', openYt:'유튜브에서 열기', prev:'◀ 이전', nextStep:'다음 단계 ▶', finish:'완료',
       done:'끝!', pause:'일시정지', resume:'다시 시작', whole:'전체', stepN:'{0}단계', prog:'{0} / {1} 단계',
-      empty:'아직 저장한 레시피가 없어요.<br>아래에서 유튜브 주소로 추가해 보세요.',
+      empty:'아직 저장한 레시피가 없어요.<br>위에서 요리를 검색해 첫 레시피를 만들어 보세요.',
       timer:'타이머', ingView:'재료 보기', stepsView:'만드는 법 보기', tipsView:'💡 팁 보기',
       noSteps:'만드는 법: 아직 적지 않았어요.', cookStart:'요리 시작', watch:'영상 보기', edit:'수정', del:'삭제', delConfirm:'정말 삭제?',
       videoTitle:'요리 영상', vidLab:'{0}단계 · {1}부터', vplay:'▶ 영상 {0}부터 보기',
@@ -366,7 +373,7 @@
       driveInfo:'구글 드라이브와 동기화 중 · 마지막 {0}', driveNow:'지금 동기화', driveOff:'연결 해제',
       driveOffConfirm:'연결을 해제할까요? 이 기기의 레시피는 그대로 남아요.',
       driveErrInfo:'동기화에 실패했어요. 인터넷을 확인하고 "지금 동기화"를 눌러 보세요.',
-      autoGen:'✨ 자동으로 레시피 만들기', autoOr:'자동이 안 되면 아래 방법으로 직접 할 수 있어요.',
+      autoGen:'✨ 자동으로 레시피 만들기', autoOr:'자동이 안 될 때: 직접 하는 방법', chipList:'김치찌개,파스타,계란말이,제육볶음',
       autoBusy:'영상을 분석하는 중이에요… (최대 1분)', autoNoUrl:'위 칸에 유튜브 영상 주소를 먼저 넣어 주세요.',
       autoDone:'자동으로 채웠어요. 아래에서 확인 후 저장해 주세요.',
       autoRate:'요청이 너무 많아요. 잠시 뒤에 다시 시도해 주세요.', autoQuota:'오늘 쓸 수 있는 무료 한도를 다 썼어요. 아래 직접 방법을 써 주세요.',
@@ -380,13 +387,13 @@
       title:'My Recipe Notes',
       logo:'My <span>Recipe</span> Notes',
       h1:'Your go-to dishes,<br>now <em>one click</em> away.',
-      lead:'Save the time, ingredients and steps for each dish, and pull them up whenever you need them.',
+      lead:'Search a dish and AI turns the video into a recipe, with step-by-step timers to cook along.',
       gotoadd:'＋ Add a recipe', myRecipes:'My recipes', addAria:'Add a recipe',
-      addTitle:'Add a recipe from a YouTube link', editTitle:'Edit recipe',
-      sub:'Paste a video link, then write down the dish details and save them.',
+      addTitle:'Search a dish to add a recipe', editTitle:'Edit recipe',
+      sub:'Search a dish and tap a video — the recipe is created automatically.',
       urlLabel:'YouTube link', pickTitle:'Choose a cover image', pickSub:'Tap a scene that shows the finished dish',
       pickMq:'Video thumbnail', pick1:'Early scene', pick2:'Middle scene', pick3:'Late scene',
-      gemTitle:'Organize the recipe with Gemini', gemHint:'Gemini in Chrome reads the video for you',
+      gemTitle:'Organize the recipe with Gemini', gemHint:'AI reads the video for you',
       gemS1:'Press the button below to <b>copy the prompt for Gemini</b> and open Gemini in a new tab.',
       openGem:'Open Gemini + copy prompt', copyOnly:'Copy prompt only',
       gemS1h:'Enter the YouTube link above first and the video link will be included in the prompt.',
@@ -399,10 +406,10 @@
       ingsLabel:'Ingredients (comma-separated)', stepsLabel:"Steps (one step per line; start tips with 'Tip:')",
       stepsHint:'If a step contains a single time like "for 50 minutes", a timer is added to that step.',
       save:'Save recipe', saveEdit:'Save changes', cancelEdit:'Cancel edit', editing:'Editing',
-      footer:'Saved recipes are kept only in this browser on this device. The video content is organized by pasting the answer you get from Gemini in Chrome.',
+      footer:'Recipes are stored in this browser; turn on "Connect Drive" at the top to see them on every device via your Google Drive. The AI (Gemini) writes the recipe, so please check it before saving.',
       cookAria:'Cook mode', close:'Close', openYt:'Open on YouTube', prev:'◀ Back', nextStep:'Next step ▶', finish:'Finish',
       done:'Done!', pause:'Pause', resume:'Resume', whole:'Total', stepN:'Step {0}', prog:'Step {0} / {1}',
-      empty:'No saved recipes yet.<br>Add one below with a YouTube link.',
+      empty:'No saved recipes yet.<br>Search a dish above to create your first one.',
       timer:'Timer', ingView:'Show ingredients', stepsView:'Show steps', tipsView:'💡 Show tips',
       noSteps:'Steps: not written yet.', cookStart:'Start cooking', watch:'Watch video', edit:'Edit', del:'Delete', delConfirm:'Really delete?',
       videoTitle:'Cooking video', vidLab:'Step {0} \u00b7 from {1}', vplay:'▶ Watch from {0}',
@@ -427,7 +434,7 @@
       driveInfo:'Synced with Google Drive \u00b7 last {0}', driveNow:'Sync now', driveOff:'Disconnect',
       driveOffConfirm:'Disconnect? The recipes on this device will stay.',
       driveErrInfo:'Sync failed. Check your connection and press "Sync now".',
-      autoGen:'✨ Create the recipe automatically', autoOr:'If this doesn\u2019t work, you can do it manually below.',
+      autoGen:'✨ Create the recipe automatically', autoOr:'If automatic fails: do it manually', chipList:'kimchi stew,pasta,rolled omelette,spicy pork',
       autoBusy:'Analyzing the video\u2026 (up to a minute)', autoNoUrl:'Please enter a YouTube video link in the field above first.',
       autoDone:'Filled in automatically. Check below, then save.',
       autoRate:'Too many requests. Please try again in a little while.', autoQuota:'The free daily quota has run out. Please use the manual method below.',
@@ -620,8 +627,17 @@
   }
 
   // ---------- 목록 ----------
+  function placeMine(){
+    var m = $('mine'), a = $('add'); if(!m || !a) return;
+    if(store.length){ if(m.nextElementSibling !== a) a.parentNode.insertBefore(m, a); }
+    else if(m.previousElementSibling !== a) a.parentNode.insertBefore(m, a.nextSibling);
+  }
+  function drawChips(){
+    var c = $('qchips'); c.innerHTML = '';
+    tr('chipList').split(',').forEach(function(w){ var b = document.createElement('button'); b.type='button'; b.className='qchip'; b.textContent = w; b.onclick = function(){ $('sq').value = w; $('sbtn').click(); }; c.appendChild(b); });
+  }
   function renderList(){
-    var L = $('list');
+    var L = $('list'); placeMine();
     if(!store.length){ L.innerHTML = '<div class="empty" style="grid-column:1/-1">'+tr('empty')+'</div>'; return; }
     L.innerHTML = store.map(function(r){
       var sp = splitSteps(r), times = sp.steps.map(stepSecs), hasStepTimer = times.some(Boolean), tot = totalSecs(r.time);
@@ -923,6 +939,7 @@
       } else {
         var e = (o.j && o.j.error) || '';
         res.textContent = e==='rate' ? tr('autoRate') : e==='quota' ? tr('autoQuota') : e==='video' ? tr('autoVideo') : e==='busy' ? tr('autoAiBusy') : e==='timeout' ? tr('autoTimeout') : tr('autoFail');
+        if(e!=='rate' && e!=='quota') $('gemdetails').open = true;
       }
     })
     .catch(function(){ res.textContent = tr('autoFail'); })
@@ -1058,7 +1075,7 @@
     $('addtitle').textContent = editUid ? tr('editTitle') : tr('addTitle');
     var v = $('url').value.trim(); $('err').textContent = (v && !ytId(v)) ? tr('badUrl') : '';
     $('copyres').textContent = ''; $('gemres').textContent = ''; $('saveerr').textContent = ''; $('autores').textContent = ''; $('sres-msg').textContent = ''; $('sres').innerHTML = '';
-    refreshPromptView(); renderPreview(); drawPick(); renderList(); renderBar();
+    refreshPromptView(); renderPreview(); drawPick(); renderList(); renderBar(); drawChips();
     if(!$('cook').hidden){
       renderCook();
       if(vidState && !$('ckvid').hidden) $('ckvidlab').textContent = tr('vidLab',vidState.i+1,fmtVt(vidState.sec));
