@@ -75,9 +75,17 @@
 
   /* 레시피 목록 */
   .list{display:grid;gap:12px;grid-template-columns:1fr;align-items:start}
-  .item{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;display:grid;gap:8px}
-  .item img{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px;background:#eee}
-  .item h3{font-size:18px;letter-spacing:-.02em}
+  .item{background:#fff;border:1px solid var(--line);border-radius:16px;padding:10px;display:grid;grid-template-columns:104px 1fr;gap:6px 12px;align-items:start}
+  .item>.acts,.item>details.more{grid-column:1/-1}
+  .item .chip{white-space:nowrap}
+  .item img{grid-row:1/3;width:104px;aspect-ratio:4/3;object-fit:cover;border-radius:10px;background:#eee}
+  .item h3{font-size:18px;letter-spacing:-.02em;line-height:1.35;min-height:2.7em;font-size:16px;align-self:start;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .item .meta{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:30px}
+  .item .mini{display:flex;gap:6px;flex:none}
+  .item .mini button{font:inherit;font-size:13px;font-weight:700;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:8px;padding:4px 10px;cursor:pointer}
+  .item .mini .warn{border-color:#e6b8b4;color:#b3261e}
+  .item details.more h4{font-size:14px;margin:10px 0 2px;color:var(--ink)}
+  .item details.more h4:first-of-type{margin-top:8px}
   .chip{font-size:13px;background:var(--accent-soft);color:#a23a14;padding:3px 10px;border-radius:8px;display:inline-block}
   .item details{font-size:14px}
   .item summary{cursor:pointer;font-weight:700;color:var(--accent);padding:2px 0}
@@ -187,7 +195,7 @@
   footer{margin-top:40px;font-size:12px;color:var(--muted);text-align:center}
 
   @media(min-width:820px){
-    .list{grid-template-columns:1fr 1fr 1fr}
+    .list{grid-template-columns:1fr 1fr}
     .form{grid-template-columns:1fr 1fr}
     .form .full{grid-column:1/-1}
     .pick-g{grid-template-columns:repeat(4,1fr)}
@@ -348,6 +356,7 @@
       footer:'저장한 레시피는 이 브라우저에 보관되고, 상단의 "드라이브 연결"을 켜면 내 구글 드라이브로 모든 기기에서 볼 수 있어요. 레시피는 AI(Gemini)가 정리하니 저장 전에 확인해 주세요.',
       cookAria:'요리 모드', close:'닫기', openYt:'유튜브에서 열기', prev:'◀ 이전', nextStep:'다음 단계 ▶', finish:'완료',
       done:'끝!', pause:'일시정지', resume:'다시 시작', whole:'전체', stepN:'{0}단계', prog:'{0} / {1} 단계',
+      more:'더보기',
       empty:'아직 저장한 레시피가 없어요.<br>위에서 요리를 검색해 첫 레시피를 만들어 보세요.',
       timer:'타이머', ingView:'재료 보기', stepsView:'만드는 법 보기', tipsView:'💡 팁 보기',
       noSteps:'만드는 법: 아직 적지 않았어요.', cookStart:'요리 시작', watch:'영상 보기', edit:'수정', del:'삭제', delConfirm:'정말 삭제?',
@@ -409,6 +418,7 @@
       footer:'Recipes are stored in this browser; turn on "Connect Drive" at the top to see them on every device via your Google Drive. The AI (Gemini) writes the recipe, so please check it before saving.',
       cookAria:'Cook mode', close:'Close', openYt:'Open on YouTube', prev:'◀ Back', nextStep:'Next step ▶', finish:'Finish',
       done:'Done!', pause:'Pause', resume:'Resume', whole:'Total', stepN:'Step {0}', prog:'Step {0} / {1}',
+      more:'More',
       empty:'No saved recipes yet.<br>Search a dish above to create your first one.',
       timer:'Timer', ingView:'Show ingredients', stepsView:'Show steps', tipsView:'💡 Show tips',
       noSteps:'Steps: not written yet.', cookStart:'Start cooking', watch:'Watch video', edit:'Edit', del:'Delete', delConfirm:'Really delete?',
@@ -644,19 +654,24 @@
       var h = '<article class="item">';
       h += '<img src="'+esc(imgUrl(r.id, r.img||'mq'))+'" alt="" loading="lazy" data-fb="'+esc(imgUrl(r.id,'mq'))+'">';
       h += '<h3>'+esc(r.name)+'</h3>';
-      if(r.time) h += '<div><span class="chip">⏱ '+esc(r.time)+'</span>'+
-        ((!hasStepTimer && tot) ? '<button type="button" class="tbtn" data-act="tstart" data-uid="'+esc(r.uid)+'" data-i="total">⏲ '+tr('timer')+' '+fmt(tot)+'</button>' : '')+'</div>';
-      if(r.ings.length) h += '<details><summary>'+tr('ingView')+'</summary><ul>'+r.ings.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul></details>';
-      if(sp.steps.length) h += '<details><summary>'+tr('stepsView')+'</summary><ol>'+sp.steps.map(function(t,i){
-        return '<li>'+esc(t)+(times[i] ? '<button type="button" class="tbtn" data-act="tstart" data-uid="'+esc(r.uid)+'" data-i="'+i+'">⏲ '+fmt(times[i])+'</button>' : '')+'</li>';
-      }).join('')+'</ol></details>';
-      else h += '<p style="font-size:14px;color:var(--muted)">'+tr('noSteps')+'</p>';
-      sp.tips.forEach(function(t){ h += '<div class="tip">💡 '+esc(t)+'</div>'; });
+      h += '<div class="meta"><span>';
+      if(r.time) h += '<span class="chip">⏱ '+esc(r.time)+'</span>';
+      h += '</span><span class="mini">'+
+        '<button type="button" data-act="edit" data-uid="'+esc(r.uid)+'">'+tr('edit')+'</button>'+
+        '<button type="button" class="warn" data-act="del" data-uid="'+esc(r.uid)+'">'+tr('del')+'</button></span></div>';
       h += '<div class="acts">';
       if(sp.steps.length) h += '<button type="button" class="go" data-act="cook" data-uid="'+esc(r.uid)+'">'+tr('cookStart')+'</button>';
-      h += '<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+tr('watch')+'</a>'+
-        '<button type="button" data-act="edit" data-uid="'+esc(r.uid)+'">'+tr('edit')+'</button>'+
-        '<button type="button" data-act="del" data-uid="'+esc(r.uid)+'">'+tr('del')+'</button></div></article>';
+      h += '<a href="'+esc(r.url)+'" target="_blank" rel="noopener">'+tr('watch')+'</a>';
+      if(r.time && !hasStepTimer && tot) h += '<button type="button" data-act="tstart" data-uid="'+esc(r.uid)+'" data-i="total">⏲ '+fmt(tot)+'</button>';
+      h += '</div>';
+      h += '<details class="more"><summary>'+tr('more')+'</summary>';
+      if(r.ings.length) h += '<h4>'+tr('ingView')+'</h4><ul>'+r.ings.map(function(t){return '<li>'+esc(t)+'</li>'}).join('')+'</ul>';
+      if(sp.steps.length) h += '<h4>'+tr('stepsView')+'</h4><ol>'+sp.steps.map(function(t,i){
+        return '<li>'+esc(t)+(times[i] ? '<button type="button" class="tbtn" data-act="tstart" data-uid="'+esc(r.uid)+'" data-i="'+i+'">⏲ '+fmt(times[i])+'</button>' : '')+'</li>';
+      }).join('')+'</ol>';
+      else h += '<p style="font-size:14px;color:var(--muted)">'+tr('noSteps')+'</p>';
+      sp.tips.forEach(function(t){ h += '<div class="tip">💡 '+esc(t)+'</div>'; });
+      h += '</details></article>';
       return h;
     }).join('');
   }
