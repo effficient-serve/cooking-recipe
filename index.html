@@ -5,6 +5,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>내 레시피 노트</title>
+<meta name="description" content="요리를 검색하면 AI가 영상에서 레시피를 정리해 주고, 단계별 타이머와 영상 반복 재생으로 따라 만들 수 있어요.">
+<meta name="theme-color" content="#faf7f2">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="내 레시피 노트">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:url" content="https://cooking-recipe-c5ga.netlify.app/">
+<meta property="og:title" content="내 레시피 노트 · 자주 해먹는 요리, 한 번의 클릭으로">
+<meta property="og:description" content="요리를 검색하면 AI가 영상에서 레시피를 정리해 주고, 단계별 타이머와 영상 반복 재생으로 따라 만들 수 있어요.">
+<meta property="og:image" content="https://cooking-recipe-c5ga.netlify.app/og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="내 레시피 노트 — 자주 해먹는 요리, 이제 한 번의 클릭으로">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="내 레시피 노트 · 자주 해먹는 요리, 한 번의 클릭으로">
+<meta name="twitter:description" content="요리를 검색하면 AI가 영상에서 레시피를 정리해 주고, 단계별 타이머와 영상 반복 재생으로 따라 만들 수 있어요.">
+<meta name="twitter:image" content="https://cooking-recipe-c5ga.netlify.app/og.png">
 <style>
   :root{
     --bg:#faf7f2; --ink:#2b2622; --muted:#7a7068; --line:#e7e0d5;
@@ -171,7 +191,8 @@
 </head>
 <body>
 <div class="wrap">
-  <header><button type="button" class="langbtn" id="langbtn" aria-label="Language / 언어"><b id="lk">한</b><b>/</b><b id="le">A</b></button><div class="logo" data-i18n-html="logo">내 <span>레시피</span> 노트</div></header>
+  <header><button type="button" class="langbtn" id="langbtn" aria-label="Language / 언어"><b id="lk">한</b><b>/</b><b id="le">A</b></button><div class="logo" data-i18n-html="logo">내 <span>레시피</span> 노트</div><button type="button" class="langbtn" id="drivebtn" hidden style="margin-left:auto"></button></header>
+  <div class="hint" id="drivestat" hidden style="margin:-10px 0 14px"></div>
 
   <section class="hero">
     <h1 data-i18n-html="h1">자주 해먹는 요리,<br>이제 <em>한 번의 클릭</em>으로.</h1>
@@ -341,6 +362,10 @@
       searchQuota:'오늘 검색 한도를 다 썼어요. 아래 칸에 유튜브 주소를 직접 붙여 넣어 주세요.',
       searchRate:'검색이 너무 많아요. 잠시 뒤에 다시 시도해 주세요.',
       searchFail:'검색에 실패했어요. 잠시 뒤에 다시 하거나 유튜브 주소를 직접 붙여 넣어 주세요.',
+      driveBtn:'☁ 드라이브 연결', driveSyncing:'☁ 동기화 중…', driveOn:'☁ 동기화됨', driveReauth:'☁ 다시 연결', driveErr:'☁ 동기화 실패',
+      driveInfo:'구글 드라이브와 동기화 중 · 마지막 {0}', driveNow:'지금 동기화', driveOff:'연결 해제',
+      driveOffConfirm:'연결을 해제할까요? 이 기기의 레시피는 그대로 남아요.',
+      driveErrInfo:'동기화에 실패했어요. 인터넷을 확인하고 "지금 동기화"를 눌러 보세요.',
       autoGen:'✨ 자동으로 레시피 만들기', autoOr:'자동이 안 되면 아래 방법으로 직접 할 수 있어요.',
       autoBusy:'영상을 분석하는 중이에요… (최대 1분)', autoNoUrl:'위 칸에 유튜브 영상 주소를 먼저 넣어 주세요.',
       autoDone:'자동으로 채웠어요. 아래에서 확인 후 저장해 주세요.',
@@ -398,6 +423,10 @@
       searchQuota:'Today\u2019s search quota has run out. Please paste a YouTube link below instead.',
       searchRate:'Too many searches. Please try again in a little while.',
       searchFail:'Search failed. Try again shortly, or paste a YouTube link below.',
+      driveBtn:'☁ Connect Drive', driveSyncing:'☁ Syncing\u2026', driveOn:'☁ Synced', driveReauth:'☁ Reconnect', driveErr:'☁ Sync failed',
+      driveInfo:'Synced with Google Drive \u00b7 last {0}', driveNow:'Sync now', driveOff:'Disconnect',
+      driveOffConfirm:'Disconnect? The recipes on this device will stay.',
+      driveErrInfo:'Sync failed. Check your connection and press "Sync now".',
       autoGen:'✨ Create the recipe automatically', autoOr:'If this doesn\u2019t work, you can do it manually below.',
       autoBusy:'Analyzing the video\u2026 (up to a minute)', autoNoUrl:'Please enter a YouTube video link in the field above first.',
       autoDone:'Filled in automatically. Check below, then save.',
@@ -758,11 +787,13 @@
       uid: editUid || newUid(), id: curId, img: curImg, url: 'https://www.youtube.com/watch?v='+curId, name: name,
       time: $('time').value.trim(),
       ings: $('ings').value.split(/[,\n]/).map(function(s){return s.trim()}).filter(Boolean),
-      steps: $('steps').value.split('\n').map(function(s){return s.trim().replace(/^\d+\s*[.)]\s*/,'')}).filter(Boolean)
+      steps: $('steps').value.split('\n').map(function(s){return s.trim().replace(/^\d+\s*[.)]\s*/,'')}).filter(Boolean),
+      ts: Date.now()
     };
     if(editUid){ for(var i=0;i<store.length;i++) if(store[i].uid===editUid){ store[i] = rec; break; } }
     else store.unshift(rec);
     $('err').textContent = persist() ? '' : tr('noStorage');
+    driveSchedule();
     $('saveerr').textContent = '';
     resetForm(); renderList();
     document.querySelector('h2.sec').scrollIntoView({behavior:'smooth'});
@@ -1009,7 +1040,7 @@
         el.setAttribute('data-armed','1'); el.textContent = tr('delConfirm'); el.classList.add('warn');
         setTimeout(function(){ if(el.isConnected){ el.removeAttribute('data-armed'); el.textContent = tr('del'); el.classList.remove('warn'); } }, 3000);
       } else {
-        store = store.filter(function(r){return r.uid!==uid}); persist(); renderList();
+        store = store.filter(function(r){return r.uid!==uid}); tomb[uid] = Date.now(); saveTomb(); persist(); driveSchedule(); renderList();
       }
     }
   });
@@ -1032,13 +1063,163 @@
       renderCook();
       if(vidState && !$('ckvid').hidden) $('ckvidlab').textContent = tr('vidLab',vidState.i+1,fmtVt(vidState.sec));
     }
-    updateTitle();
+    updateTitle(); driveRefresh();
   }
   $('langbtn').addEventListener('click', function(){
     LANG = LANG==='ko' ? 'en' : 'ko';
     try{ localStorage.setItem('recipe_lang', LANG); }catch(e){}
     applyLang();
   });
+
+  // ---------- 구글 드라이브 동기화 ----------
+  // 구글 클라우드에서 만든 OAuth 클라이언트 ID를 여기에 넣으면 켜져요. (비밀번호가 아니라 공개돼도 괜찮은 값이에요)
+  var GOOGLE_CLIENT_ID = '237935493290-p1m7503ujkrhjtavqat2o6jmtehsip30.apps.googleusercontent.com';
+  var DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+  var DKEY = 'recipe_drive_on', DEL_KEY = 'recipe_note_del', DFILE = 'recipes.json';
+  var dtoken = '', dtokenExp = 0, dclient = null, dcb = null, dfileId = '';
+  var dbusy = false, dqueued = false, dtimer = null, dstate = 'off', dlast = 0;
+  var tomb = {};
+  try { tomb = JSON.parse(localStorage.getItem(DEL_KEY) || '{}') || {}; } catch(e){ tomb = {}; }
+  function saveTomb(){ try { localStorage.setItem(DEL_KEY, JSON.stringify(tomb)); } catch(e){} }
+  function driveOn(){ try { return localStorage.getItem(DKEY) === '1'; } catch(e){ return false; } }
+
+  // 두 기기의 레시피를 합쳐요: 같은 레시피는 나중에 고친 쪽이 이기고, 삭제한 건 되살아나지 않아요
+  function mergeData(cloud){
+    var map = {}, u, order = {}, n = 0, cutoff = Date.now() - 90*24*3600*1000;
+    function put(r){ if(!r || !r.uid) return; var o = map[r.uid]; if(!o || (r.ts||0) > (o.ts||0)) map[r.uid] = r; }
+    store.forEach(function(r){ order[r.uid] = n++; put(r); });
+    (cloud.recipes || []).forEach(put);
+    var d = {}, cd = cloud.deleted || {};
+    for(u in tomb) d[u] = tomb[u];
+    for(u in cd) d[u] = Math.max(d[u] || 0, cd[u] || 0);
+    for(u in d) if(d[u] < cutoff) delete d[u];
+    var keep = [], added = [];
+    for(u in map){
+      var r = map[u];
+      if(d[u] && d[u] >= (r.ts || 0)) continue;
+      if(!r.steps) r.steps = []; if(!r.ings) r.ings = [];
+      (u in order ? keep : added).push(r);
+    }
+    keep.sort(function(a,b){ return order[a.uid] - order[b.uid]; });
+    added.sort(function(a,b){ return (b.ts||0) - (a.ts||0); });
+    return { recipes: added.concat(keep), deleted: d };
+  }
+
+  function loadGIS(cb, fail){
+    if(window.google && google.accounts && google.accounts.oauth2) return cb();
+    var el = document.createElement('script'); el.src = 'https://accounts.google.com/gsi/client'; el.async = true;
+    el.onload = cb; el.onerror = fail; document.head.appendChild(el);
+  }
+  function getToken(interactive){
+    return new Promise(function(res, rej){
+      if(dtoken && Date.now() < dtokenExp - 60000) return res(dtoken);
+      loadGIS(function(){
+        try {
+          if(!dclient) dclient = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID, scope: DRIVE_SCOPE,
+            callback: function(r){
+              if(r && r.access_token){
+                dtoken = r.access_token; dtokenExp = Date.now() + (r.expires_in || 3600)*1000;
+                try { localStorage.setItem(DKEY, '1'); } catch(e){}
+                if(dcb) dcb.res(dtoken);
+              } else if(dcb) dcb.rej(new Error((r && r.error) || 'auth'));
+            },
+            error_callback: function(e){ if(dcb) dcb.rej(new Error((e && e.type) || 'auth')); }
+          });
+          dcb = {res: res, rej: rej};
+          dclient.requestAccessToken({prompt: interactive ? '' : 'none'});
+        } catch(e){ rej(e); }
+      }, function(){ rej(new Error('gis')); });
+    });
+  }
+  async function dfetch(url, opts, retried){
+    opts = opts || {}; opts.headers = Object.assign({}, opts.headers, {Authorization: 'Bearer ' + dtoken});
+    var r = await fetch(url, opts);
+    if(r.status === 401 && !retried){ dtoken = ''; await getToken(false); return dfetch(url, opts, true); }
+    return r;
+  }
+  async function findFile(){
+    var r = await dfetch('https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=' + encodeURIComponent("name='" + DFILE + "'") + '&fields=files(id)');
+    if(!r.ok) throw new Error('find');
+    var j = await r.json(); return (j.files && j.files[0] && j.files[0].id) || '';
+  }
+  async function readFile(id){
+    var r = await dfetch('https://www.googleapis.com/drive/v3/files/' + id + '?alt=media');
+    if(r.status === 404){ dfileId = ''; return null; }
+    if(!r.ok) throw new Error('read');
+    try { var j = await r.json(); return (j && typeof j === 'object') ? j : null; } catch(e){ return null; }
+  }
+  async function writeFile(id, data){
+    var body = JSON.stringify(data), r;
+    if(id){
+      r = await dfetch('https://www.googleapis.com/upload/drive/v3/files/' + id + '?uploadType=media', {method:'PATCH', headers:{'Content-Type':'application/json'}, body: body});
+      if(r.status === 404){ id = ''; }
+      else { if(!r.ok) throw new Error('write'); return id; }
+    }
+    var bd = 'rn' + Date.now().toString(36);
+    var multi = '--' + bd + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify({name: DFILE, parents: ['appDataFolder']}) +
+      '\r\n--' + bd + '\r\nContent-Type: application/json\r\n\r\n' + body + '\r\n--' + bd + '--';
+    r = await dfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {method:'POST', headers:{'Content-Type':'multipart/related; boundary=' + bd}, body: multi});
+    if(!r.ok) throw new Error('create');
+    return (await r.json()).id;
+  }
+
+  async function driveSync(){
+    if(!GOOGLE_CLIENT_ID || !driveOn()) return;
+    if(dbusy){ dqueued = true; return; }
+    dbusy = true; setDrive('syncing');
+    try {
+      try { await getToken(false); } catch(e){ setDrive('reauth'); return; }
+      if(!dfileId) dfileId = await findFile();
+      var cloud = dfileId ? await readFile(dfileId) : null;
+      if(!cloud) cloud = {recipes: [], deleted: {}};
+      var m = mergeData(cloud);
+      var before = JSON.stringify(store);
+      store = m.recipes; tomb = m.deleted; persist(); saveTomb();
+      var same = JSON.stringify(cloud.recipes || []) === JSON.stringify(store) && JSON.stringify(cloud.deleted || {}) === JSON.stringify(tomb);
+      if(!same || !dfileId) dfileId = await writeFile(dfileId, {v: 1, recipes: store, deleted: tomb});
+      if(before !== JSON.stringify(store)) renderList();
+      dlast = Date.now(); setDrive('ok');
+    } catch(e){ setDrive('err'); }
+    finally { dbusy = false; if(dqueued){ dqueued = false; driveSchedule(); } }
+  }
+  function driveSchedule(){
+    if(!GOOGLE_CLIENT_ID || !driveOn()) return;
+    clearTimeout(dtimer); dtimer = setTimeout(driveSync, 1500);
+  }
+
+  function hhmm(t){ var d = new Date(t); return ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2); }
+  function setDrive(st){ dstate = st; driveRefresh(); }
+  function driveRefresh(){
+    var b = $('drivebtn'), info = $('drivestat');
+    if(!GOOGLE_CLIENT_ID){ b.hidden = true; info.hidden = true; return; }
+    b.hidden = false;
+    b.textContent = tr({off:'driveBtn', syncing:'driveSyncing', ok:'driveOn', reauth:'driveReauth', err:'driveErr'}[dstate] || 'driveBtn');
+    if(dstate === 'off' || dstate === 'reauth'){ info.hidden = true; return; }
+    if(dstate === 'syncing' && !info.hidden) return; // 동기화 중에는 링크 위치가 바뀌지 않게 그대로 둬요
+    info.hidden = false;
+    info.innerHTML = (dstate === 'err' ? esc(tr('driveErrInfo')) : esc(tr('driveInfo', dlast ? hhmm(dlast) : '…'))) +
+      ' · <a href="#" id="dnow">' + esc(tr('driveNow')) + '</a> · <a href="#" id="doff">' + esc(tr('driveOff')) + '</a>';
+  }
+  $('drivebtn').addEventListener('click', function(){
+    if(dstate === 'ok' || dstate === 'err'){ driveSync(); return; }
+    if(dstate === 'syncing') return;
+    getToken(true).then(function(){ driveSync(); }).catch(function(){ setDrive(driveOn() ? 'reauth' : 'off'); });
+  });
+  $('drivestat').addEventListener('click', function(e){
+    var a = e.target.closest('a'); if(!a) return; e.preventDefault();
+    if(a.id === 'dnow'){ driveSync(); }
+    else if(a.id === 'doff'){
+      if(!confirm(tr('driveOffConfirm'))) return;
+      try { if(dtoken && window.google && google.accounts) google.accounts.oauth2.revoke(dtoken, function(){}); localStorage.removeItem(DKEY); } catch(x){}
+      dtoken = ''; dfileId = ''; setDrive('off');
+    }
+  });
+  document.addEventListener('visibilitychange', function(){
+    if(!document.hidden && driveOn() && dstate !== 'syncing' && Date.now() - dlast > 30000) driveSync();
+  });
+  if(GOOGLE_CLIENT_ID && driveOn()) setTimeout(driveSync, 300);
+  driveRefresh();
 
   applyLang();
 </script>
